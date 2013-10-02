@@ -58,55 +58,6 @@ unsigned load_block(istream& i, uint32 block[]);
 void save_block(ostream& o, const uint32 block[]);
 void find_collision(const uint32 IV[], uint32 msg1block0[], uint32 msg1block1[], uint32 msg2block0[], uint32 msg2block1[], bool verbose = false);
 
-#if 1
-
-// example trivial version with md5 initial value
-int main(int argc, char *argv[])
-{
-	if (argc != 2)
-	{
-		printf("Usage: %s <file_name>\n", argv[0]);
-		return 0;
-	}
-
-	seed32_1 = uint32(time(NULL));
-	seed32_2 = 0x12345678;
-	uint32 IV[4] = { MD5IV[0], MD5IV[1], MD5IV[2], MD5IV[3] };
-
-	ifstream ifs(argv[1], ios::binary);
-	ofstream ofs1("md5_data1", ios::binary);
-	ofstream ofs2("md5_data2", ios::binary);
-
-	uint32 block[16];
-	while (true)
-	{
-		unsigned len = load_block(ifs, block);
-		if (len)
-		{
-			save_block(ofs1, block);
-			save_block(ofs2, block);
-			md5_compress(IV, block);
-		} else
-			break;
-	}
-
-	uint32 msg1block0[16];
-	uint32 msg1block1[16];
-	uint32 msg2block0[16];
-	uint32 msg2block1[16];
-	find_collision(IV, msg1block0, msg1block1, msg2block0, msg2block1, true);
-
-	save_block(ofs1, msg1block0);
-	save_block(ofs1, msg1block1);
-	save_block(ofs2, msg2block0);
-	save_block(ofs2, msg2block1);
-
-	printf("use 'md5sum md5_data*' check MD5\n");
-	return 0;
-}
-
-#else
-
 #include <sstream>
 #include <string>
 #include <utility>
@@ -199,13 +150,21 @@ int main(int argc, char** argv)
 				outfn1 = prefixfn.substr(0, l-4) + "_msg1" + prefixfn.substr(l-4);
 				outfn2 = prefixfn.substr(0, l-4) + "_msg2" + prefixfn.substr(l-4);
 				unsigned i = 1;
-				while ( fs::exists(fs::path(outfn1, fs::native)) 
-					 || fs::exists(fs::path(outfn2, fs::native)))
+				bool check1, check2;
+				fs::path p1,p2;
+				//~ while ( fs::exists(fs::path(outfn1, fs::native)) 
+					 //~ || fs::exists(fs::path(outfn2, fs::native)))
+				do
 				{
 					outfn1 = prefixfn.substr(0, l-4) + "_msg1_" + lexical_cast<string>(i) + prefixfn.substr(l-4);
 					outfn2 = prefixfn.substr(0, l-4) + "_msg2_" + lexical_cast<string>(i) + prefixfn.substr(l-4);
 					++i;
+					p1 = fs::path(outfn1);
+					p2 = fs::path(outfn2);
+					check1 = fs::exists(p1);
+					check2 = fs::exists(p2);
 				}
+				while( check1 || check2 );
 			}
 		}
 
@@ -408,9 +367,6 @@ void test_all()
 		test_rndiv(true);
 	}
 }
-
-#endif
-
 
 unsigned load_block(istream& i, uint32 block[])
 {

@@ -3,6 +3,7 @@ BIN=fastcoll
 CXX=g++
 CC=gcc
 CFLAGS=-g -Wall -O2
+LIB=-lboost_program_options -lboost_filesystem -lboost_system -dynamic
 
 .cpp.o:
 	$(CXX) $(CFLAGS) -c $^ $(INC_DIR)
